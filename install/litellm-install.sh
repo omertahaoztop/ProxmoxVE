@@ -30,7 +30,11 @@ $STD uv venv --clear /opt/litellm/.venv
 $STD /opt/litellm/.venv/bin/python -m ensurepip --upgrade
 $STD /opt/litellm/.venv/bin/python -m pip install --upgrade pip
 $STD /opt/litellm/.venv/bin/python -m pip install litellm[proxy] prisma
-$STD /opt/litellm/.venv/bin/prisma generate
+# Workaround for upstream bug: https://github.com/BerriAI/litellm/issues/26097
+# The litellm wheel does not ship schema.prisma, but the litellm-proxy-extras
+# dependency (pulled in by the [proxy] extra) does. Point prisma at that copy.
+PRISMA_SCHEMA="$(/opt/litellm/.venv/bin/python -c 'import litellm_proxy_extras, os; print(os.path.join(os.path.dirname(litellm_proxy_extras.__file__), "schema.prisma"))')"
+$STD /opt/litellm/.venv/bin/prisma generate --schema="$PRISMA_SCHEMA"
 msg_ok "Installed LiteLLM"
 
 msg_info "Configuring LiteLLM"

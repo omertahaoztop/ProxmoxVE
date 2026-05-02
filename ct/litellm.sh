@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/omertahaoztop/ProxmoxVE/fix/litellm-prisma-schema/misc/build.func)
 # Copyright (c) 2021-2026 community-scripts ORG
 # Author: stout01
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
@@ -38,7 +38,10 @@ function update_script() {
 
   msg_info "Updating LiteLLM"
   $STD "$VENV_PATH/bin/python" -m pip install --upgrade litellm[proxy] prisma
-  $STD "$VENV_PATH/bin/prisma" generate
+  # Workaround for upstream bug: https://github.com/BerriAI/litellm/issues/26097
+  # The litellm wheel does not ship schema.prisma, but litellm-proxy-extras does.
+  PRISMA_SCHEMA="$("$VENV_PATH/bin/python" -c 'import litellm_proxy_extras, os; print(os.path.join(os.path.dirname(litellm_proxy_extras.__file__), "schema.prisma"))')"
+  $STD "$VENV_PATH/bin/prisma" generate --schema="$PRISMA_SCHEMA"
   msg_ok "LiteLLM updated"
 
   msg_info "Updating DB Schema"
